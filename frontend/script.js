@@ -37,6 +37,8 @@ const dom = {
 };
 
 // --- API Interaction ---
+import { CONFIG } from './config.js';
+
 dom.generateBtn.addEventListener('click', async () => {
     const text = dom.userInput.value.trim();
     if (!text) return;
@@ -44,7 +46,7 @@ dom.generateBtn.addEventListener('click', async () => {
     setLoading(true);
 
     try {
-        const response = await fetch('http://127.0.0.1:8000/generate_path', {
+        const response = await fetch(`${CONFIG.API_URL}/generate_path`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
