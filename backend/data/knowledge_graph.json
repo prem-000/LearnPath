@@ -1,0 +1,156 @@
+{
+    "machine_learning": {
+        "nodes": [
+            {
+                "id": "python_basics",
+                "level": 1,
+                "type": "core"
+            },
+            {
+                "id": "linear_algebra",
+                "level": 1,
+                "type": "core"
+            },
+            {
+                "id": "statistics",
+                "level": 2,
+                "type": "core"
+            },
+            {
+                "id": "data_preprocessing",
+                "level": 2,
+                "type": "core"
+            },
+            {
+                "id": "supervised_learning",
+                "level": 3,
+                "type": "core"
+            },
+            {
+                "id": "unsupervised_learning",
+                "level": 3,
+                "type": "core"
+            },
+            {
+                "id": "neural_networks",
+                "level": 4,
+                "type": "core"
+            },
+            {
+                "id": "deep_learning",
+                "level": 5,
+                "type": "core"
+            }
+        ],
+        "edges": [
+            {
+                "from": "python_basics",
+                "to": "data_preprocessing"
+            },
+            {
+                "from": "linear_algebra",
+                "to": "neural_networks"
+            },
+            {
+                "from": "statistics",
+                "to": "supervised_learning"
+            },
+            {
+                "from": "data_preprocessing",
+                "to": "supervised_learning"
+            },
+            {
+                "from": "supervised_learning",
+                "to": "neural_networks"
+            },
+            {
+                "from": "neural_networks",
+                "to": "deep_learning"
+            }
+        ],
+        "algorithms": [
+            "Gradient Descent",
+            "Backpropagation",
+            "Adam Optimizer"
+        ]
+    },
+    "web_development": {
+        "nodes": [
+            {
+                "id": "html_css",
+                "level": 1,
+                "type": "core"
+            },
+            {
+                "id": "javascript_basics",
+                "level": 1,
+                "type": "core"
+            },
+            {
+                "id": "dom_manipulation",
+                "level": 2,
+                "type": "core"
+            },
+            {
+                "id": "frontend_frameworks",
+                "level": 3,
+                "type": "core"
+            },
+            {
+                "id": "backend_basics",
+                "level": 3,
+                "type": "core"
+            },
+            {
+                "id": "databases",
+                "level": 4,
+                "type": "core"
+            },
+            {
+                "id": "auth_security",
+                "level": 4,
+                "type": "core"
+            },
+            {
+                "id": "deployment",
+                "level": 5,
+                "type": "core"
+            }
+        ],
+        "edges": [
+            {
+                "from": "html_css",
+                "to": "dom_manipulation"
+            },
+            {
+                "from": "javascript_basics",
+                "to": "dom_manipulation"
+            },
+            {
+                "from": "dom_manipulation",
+                "to": "frontend_frameworks"
+            },
+            {
+                "from": "javascript_basics",
+                "to": "backend_basics"
+            },
+            {
+                "from": "backend_basics",
+                "to": "databases"
+            },
+            {
+                "from": "backend_basics",
+                "to": "auth_security"
+            },
+            {
+                "from": "databases",
+                "to": "deployment"
+            }
+        ],
+        "algorithms": [
+            "REST API Design",
+            "JWT Authentication",
+            "MVC Pattern"
+        ]
+    }
+}
