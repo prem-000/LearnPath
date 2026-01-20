@@ -4,18 +4,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neural LearnPath</title>
+    <title>Neural LearnPath | AI Roadmap</title>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;400;700&family=Space+Grotesk:wght@300;500;700&display=swap"
+        rel="stylesheet">
 
-    <!-- Styles -->
-    <link rel="stylesheet" href="style.css">
+    <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- Three.js CDN -->
+    <!-- Three.js Import Map -->
     <script type="importmap">
         {
             "imports": {
@@ -24,23 +25,32 @@
             }
         }
     </script>
+
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
     <div id="app">
         <header>
             <div class="logo">Neural <span class="highlight">LearnPath</span></div>
-            <div class="status">AI Powered</div>
+            <div class="header-right">
+                <div id="legend">
+                    <div class="legend-item"><span class="dot green"></span> Foundational</div>
+                    <div class="legend-item"><span class="dot blue"></span> Advanced</div>
+                </div>
+                <div class="status">AI Powered</div>
+            </div>
         </header>
 
         <main>
+            <!-- Input Phase -->
             <section id="input-section">
-                <h1>Describe your learning goal.</h1>
-                <p class="subtitle">Our AI builds a custom neural map for you.</p>
+                <h1>Unlock Your <span class="highlight">Future</span></h1>
+                <p class="subtitle">AI-generated organic paths for cognitive learning.</p>
 
                 <div class="input-container">
                     <textarea id="user-input"
-                        placeholder="e.g. I want to master Machine Learning for placements..."></textarea>
+                        placeholder="What do you want to master today? (e.g., Python for Web, Quantum Computing Basics)"></textarea>
 
                     <div class="controls">
                         <select id="user-level">
@@ -49,25 +59,30 @@
                             <option value="advanced">Advanced</option>
                         </select>
                         <button id="generate-btn">
-                            <span class="btn-text">Generate Path</span>
+                            <span class="btn-text">Generate Neural Path</span>
                             <div class="loader"></div>
                         </button>
                     </div>
                 </div>
             </section>
 
+            <!-- Viz Phase -->
             <section id="visualization-section" class="hidden">
                 <div id="canvas-container"></div>
-                <div id="info-panel" class="hidden">
+
+                <div id="info-panel">
                     <h2 id="node-title">Topic Name</h2>
                     <p id="node-desc">Core Topic • Level 1</p>
                     <div class="actions">
-                        <button id="explore-btn">Explore</button>
+                        <button id="explore-btn">Expand Subtopics</button>
                     </div>
                 </div>
+
                 <div id="ai-insights">
-                    <h3>Gemini Insights</h3>
-                    <ul id="insights-list"></ul>
+                    <h3>Neural Expansion</h3>
+                    <ul id="insights-list">
+                        <!-- suggestions -->
+                    </ul>
                 </div>
             </section>
         </main>

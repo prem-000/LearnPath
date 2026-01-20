@@ -19,7 +19,13 @@ const state = {
     raycaster: new THREE.Raycaster(),
     pointer: new THREE.Vector2(),
     hoveredNode: null,
-    particles: null
+    draggedNode: null,
+    isDragging: false,
+    particles: null,
+    edgeParticles: [],
+    clock: new THREE.Clock(),
+    selectedNode: null,
+    expandedNodes: new Set()
 };
 
 // --- DOM Elements ---
@@ -33,7 +39,8 @@ const dom = {
     infoPanel: document.getElementById('info-panel'),
     nodeTitle: document.getElementById('node-title'),
     nodeDesc: document.getElementById('node-desc'),
-    insightsList: document.getElementById('insights-list')
+    insightsList: document.getElementById('insights-list'),
+    exploreBtn: document.getElementById('explore-btn')
 };
 
 // --- API Interaction ---
@@ -62,8 +69,8 @@ dom.generateBtn.addEventListener('click', async () => {
 
         transitionToViz();
         if (!state.renderer) initThreeJS();
-        renderGraph(data);
-        renderInsights(data.ai_suggestions);
+        renderHierarchicalGraph(data);
+        if (data.ai_suggestions) renderInsights(data.ai_suggestions); else dom.insightsList.parentElement.classList.add('hidden');
 
     } catch (err) {
         console.error(err);
@@ -72,6 +79,7 @@ dom.generateBtn.addEventListener('click', async () => {
         setLoading(false);
     }
 });
+
 
 function setLoading(isLoading) {
     if (isLoading) {
@@ -93,9 +101,10 @@ function transitionToViz() {
 
 function renderInsights(suggestions) {
     dom.insightsList.innerHTML = '';
+    if (!suggestions) return;
     suggestions.forEach(s => {
         const li = document.createElement('li');
-        li.textContent = s;
+        li.textContent = typeof s === 'string' ? s : s.id || 'Niche Skill';
         dom.insightsList.appendChild(li);
     });
 }
@@ -107,9 +116,8 @@ function initThreeJS() {
     state.scene.fog = new THREE.FogExp2(0x020205, 0.015);
 
     state.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-    state.camera.position.set(0, 0, 45); // Centered, further back
+    state.camera.position.set(0, 5, 60);
 
-    // WebGL Renderer
     state.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     state.renderer.setSize(window.innerWidth, window.innerHeight);
     state.renderer.setPixelRatio(window.devicePixelRatio);
@@ -118,94 +126,61 @@ function initThreeJS() {
     state.renderer.domElement.style.zIndex = '1';
     dom.canvasContainer.appendChild(state.renderer.domElement);
 
-    // CSS2D Renderer (for clear text)
     state.labelRenderer = new CSS2DRenderer();
     state.labelRenderer.setSize(window.innerWidth, window.innerHeight);
     state.labelRenderer.domElement.style.position = 'absolute';
     state.labelRenderer.domElement.style.top = '0';
-    state.labelRenderer.domElement.style.pointerEvents = 'none'; // Allow clicks to pass through
-    state.labelRenderer.domElement.style.zIndex = '2'; // On top of WebGL
+    state.labelRenderer.domElement.style.pointerEvents = 'none';
+    state.labelRenderer.domElement.style.zIndex = '2';
     dom.canvasContainer.appendChild(state.labelRenderer.domElement);
 
-    // Post-processing
     const renderScene = new RenderPass(state.scene, state.camera);
     const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
     bloomPass.threshold = 0;
-    bloomPass.strength = 1.2;
-    bloomPass.radius = 0.5;
+    bloomPass.strength = 1.0;
+    bloomPass.radius = 0.3;
 
     state.composer = new EffectComposer(state.renderer);
     state.composer.addPass(renderScene);
     state.composer.addPass(bloomPass);
 
-    state.controls = new OrbitControls(state.camera, state.renderer.domElement); // Control WebGL canvas
+    state.controls = new OrbitControls(state.camera, state.renderer.domElement);
     state.controls.enableDamping = true;
     state.controls.dampingFactor = 0.05;
-    state.controls.minDistance = 10;
-    state.controls.maxDistance = 100;
 
-    // lights
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.1);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
     state.scene.add(ambientLight);
-    const hemiLight = new THREE.HemisphereLight(0x00f2ff, 0x000000, 0.4);
+    const hemiLight = new THREE.HemisphereLight(0x00f2ff, 0x000000, 0.5);
     state.scene.add(hemiLight);
 
-    // Initial brain cloud
     createBrainParticles();
 
     // Event Listeners
     window.addEventListener('resize', onWindowResize);
     window.addEventListener('mousemove', onPointerMove);
+    window.addEventListener('mousedown', onPointerDown);
+    window.addEventListener('mouseup', onPointerUp);
     window.addEventListener('click', onPointerClick);
 
     animate();
 }
 
 function createBrainParticles() {
-    // Generate particles in a brain-like shape (two lobes, roughly ellipsoid)
     const geometry = new THREE.BufferGeometry();
-    const count = 3000;
+    const count = 5000;
     const positions = new Float32Array(count * 3);
-
     for (let i = 0; i < count; i++) {
-        // Brain shape approx: elliptical, two halves split by x=0
-        // x: width, y: height, z: depth
-        // Lobe separation
-        const isRight = Math.random() > 0.5;
-        const xOffset = isRight ? 2 : -2;
-
-        // Random point in sphere
-        const u = Math.random();
-        const v = Math.random();
-        const theta = 2 * Math.PI * u;
-        const phi = Math.acos(2 * v - 1);
-
-        let r = 18 + Math.random() * 2; // Base radius
-
-        // Sculpting
-        let x = r * Math.sin(phi) * Math.cos(theta);
-        let y = r * Math.sin(phi) * Math.sin(theta);
-        let z = r * Math.cos(phi);
-
-        // Flatten z slightly
-        z *= 0.8;
-        // Stretch y slightly
-        y *= 0.9;
-
-        // Add lobe offset
-        x += (xOffset * (Math.abs(y) / 20)); // separation increases near top/center? simplified:
-        // Simple offset
-        x += (isRight ? 1.5 : -1.5);
-
-        positions[i * 3] = x;
-        positions[i * 3 + 1] = y;
-        positions[i * 3 + 2] = z;
+        const r = 35 + Math.random() * 10;
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos((Math.random() * 2) - 1);
+        positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+        positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+        positions[i * 3 + 2] = r * Math.cos(phi) * 0.4;
     }
-
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     const material = new THREE.PointsMaterial({
-        color: 0x0044aa,
-        size: 0.15,
+        color: 0x004488,
+        size: 0.12,
         transparent: true,
         opacity: 0.4,
         blending: THREE.AdditiveBlending
@@ -214,175 +189,206 @@ function createBrainParticles() {
     state.scene.add(state.particles);
 }
 
-function renderGraph(data) {
+function renderHierarchicalGraph(data) {
     // Cleanup
     state.nodes.forEach(n => {
         state.scene.remove(n);
-        if (n.userData.label) n.userData.label.element.remove(); // Remove CSS2DObject's DOM element
+        if (n.userData.label) n.userData.label.element.remove();
     });
-    // Remove lines
-    state.scene.children = state.scene.children.filter(c => c.type !== 'Line');
+    state.edges.forEach(e => state.scene.remove(e.line));
+    state.edgeParticles.forEach(p => state.scene.remove(p.mesh));
 
     state.nodes = [];
     state.edges = [];
+    state.edgeParticles = [];
 
-    // Organize nodes within the Brain volume
-    // We keep the vertical progression logic but center it effectively
-    const levelMap = {};
-    data.nodes.forEach(node => {
-        if (!levelMap[node.level]) levelMap[node.level] = [];
-        levelMap[node.level].push(node);
-    });
+    // Main Topic Node
+    const mainPos = new THREE.Vector3(0, 25, 0);
+    const mainNode = createNode({
+        id: 'main',
+        title: data.title,
+        description: data.description,
+        level: 0,
+        type: 'main'
+    }, mainPos);
 
-    const levels = Object.keys(levelMap).sort((a, b) => a - b);
-    const nodeObjects = {};
+    // Render Modules
+    if (data.modules) {
+        data.modules.forEach((mod, idx) => {
+            const angle = (idx / data.modules.length) * Math.PI * 2;
+            const radius = 15;
+            const pos = new THREE.Vector3(
+                Math.cos(angle) * radius,
+                10,
+                Math.sin(angle) * radius
+            );
 
-    // Vertical span
-    const totalHeight = 25;
-    const startY = totalHeight / 2;
-    const yStep = totalHeight / (Math.max(levels.length, 1));
+            const modNode = createNode({
+                ...mod,
+                level: 1,
+                type: 'module'
+            }, pos);
 
-    levels.forEach((level, i) => {
-        const nodesInLevel = levelMap[level];
-        const y = startY - (i * yStep);
+            createNeuralEdge(mainNode, modNode);
 
-        nodesInLevel.forEach((node, j) => {
-            // Horizontal spread based on count
-            const width = Math.min(nodesInLevel.length * 5, 20); // max width 20
-            const xStep = width / (nodesInLevel.length + 1);
-            const x = -width / 2 + (xStep * (j + 1));
-
-            // Curve z to follow brain surface roughly? 
-            // Keep central nodes deep, outer nodes projected? 
-            // Simple: z = 0 for core path visibility
-            const z = 0;
-
-            const pos = new THREE.Vector3(x, y, z);
-            createNode(node, pos);
-            nodeObjects[node.id] = pos;
+            // Subtopics (Initially hidden, or rendered close and hidden)
+            // For now, let's render them and we'll handle partial visibility later
+            // Or only render on click. Let's start with rendering them but small?
+            // User requested "expandable tree". 
         });
-    });
+    }
 
-    // AI Suggestions as peripheral thoughts
-    const suggestions = data.ai_suggestions || [];
-    suggestions.forEach((s, k) => {
-        if (typeof s !== 'string') return;
-        // Random placement in outer brain cortex
-        const angle = (k / suggestions.length) * Math.PI * 2;
-        const radius = 12 + Math.random() * 4;
-        const x = Math.cos(angle) * radius;
-        const y = Math.sin(angle) * radius * 0.8; // Ellipsoid
-        const z = (Math.random() - 0.5) * 5;
-
-        const pos = new THREE.Vector3(x, y, z);
-        const nodeData = { id: s, level: 'AI', type: 'suggestion' };
-        createNode(nodeData, pos, true);
-
-        // Connect to nearest core node
-        // Simple: connect to a random node
-        if (state.nodes.length > 0) {
-            const target = state.nodes[Math.floor(Math.random() * (state.nodes.length / 2))]; // Prefer earlier/core nodes
-            if (target) createCurvedEdge(pos, target.position, true);
-        }
-    });
-
-    // Edges
-    data.edges.forEach(edge => {
-        if (nodeObjects[edge.from] && nodeObjects[edge.to]) {
-            createCurvedEdge(nodeObjects[edge.from], nodeObjects[edge.to]);
-        }
-    });
-
-    state.controls.target.set(0, 0, 0); // Center view
+    state.controls.target.set(0, 0, 0);
 }
 
-function createNode(data, position, isSide = false) {
-    const color = isSide ? 0x00ffaa : 0x00f2ff;
+function expandNode(node) {
+    const d = node.userData.data;
+    if (d.type !== 'module' || !d.subtopics) return;
+    if (state.expandedNodes.has(d.id)) return;
 
-    // 1. 3D Object (The Glowing Dot/Node)
-    const geometry = new THREE.SphereGeometry(isSide ? 0.3 : 0.6, 16, 16);
-    const material = new THREE.MeshBasicMaterial({ color: color });
+    state.expandedNodes.add(d.id);
+
+    d.subtopics.forEach((sub, idx) => {
+        const offsetAngle = (idx / d.subtopics.length) * Math.PI - (Math.PI / 2);
+        const radius = 8;
+        const pos = new THREE.Vector3(
+            node.position.x + Math.cos(offsetAngle) * radius,
+            node.position.y - 10,
+            node.position.z + Math.sin(offsetAngle) * radius
+        );
+
+        const subNode = createNode({
+            ...sub,
+            level: 2,
+            type: 'subtopic'
+        }, pos);
+
+        createNeuralEdge(node, subNode);
+    });
+}
+
+
+function createNode(data, position) {
+    let size = 0.5;
+    if (data.level == 0) size = 1.6;
+    else if (data.level == 1) size = 1.0;
+
+    const color = data.level <= 1 ? 0x4ade80 : 0x3b82f6;
+
+    const geometry = new THREE.SphereGeometry(size, 32, 32);
+    const material = new THREE.MeshPhongMaterial({ color, emissive: color, emissiveIntensity: 0.5 });
     const mesh = new THREE.Mesh(geometry, material);
     mesh.position.copy(position);
-    mesh.userData = { isNode: true, data: data };
+    mesh.userData = { isNode: true, data, initialSize: size, pulseSpeed: 1 + Math.random(), pulsePhase: Math.random() * Math.PI * 2 };
 
-    // Glow Sprite
     const spriteMat = new THREE.SpriteMaterial({
         map: new THREE.TextureLoader().load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/sprites/spark1.png'),
-        color: color,
-        transparent: true,
-        opacity: 0.8,
-        blending: THREE.AdditiveBlending
+        color: color, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending
     });
     const sprite = new THREE.Sprite(spriteMat);
-    sprite.scale.set(isSide ? 2 : 4, isSide ? 2 : 4, 1);
+    sprite.scale.set(size * 5, size * 5, 1);
     mesh.add(sprite);
+
+    const div = document.createElement('div');
+    div.className = 'node-label';
+    div.style.color = '#fff';
+    div.style.fontSize = data.level == 0 ? '20px' : '12px';
+    div.style.fontWeight = '700';
+    div.style.padding = '4px 12px';
+    div.style.background = 'rgba(0,0,0,0.4)';
+    div.style.borderRadius = '20px';
+    const title = data.title || data.id.replace(/_/g, ' ');
+    div.innerHTML = `<span>${title}</span>`;
+
+    const label = new CSS2DObject(div);
+    label.position.set(0, size + 1.0, 0);
+    mesh.add(label);
+    mesh.userData.label = label;
 
     state.scene.add(mesh);
     state.nodes.push(mesh);
-
-    // 2. CSS2D Label (The Clear Text + Symbol)
-    const div = document.createElement('div');
-    div.className = 'node-label';
-    div.style.marginTop = '-1em'; // Center slightly
-    div.style.color = isSide ? '#aaffba' : '#ffffff';
-    div.style.fontSize = isSide ? '12px' : '16px';
-    div.style.fontWeight = 'bold';
-    div.style.textShadow = `0 0 10px ${isSide ? '#00ffaa' : '#00f2ff'}`;
-    div.style.pointerEvents = 'auto'; // allow clicking text?
-    div.style.cursor = 'pointer';
-    div.style.display = 'flex';
-    div.style.alignItems = 'center';
-    div.style.gap = '8px';
-    div.style.whiteSpace = 'nowrap';
-
-    // Icon Logic
-    const iconClass = getIconForDomain(data.id, data.type);
-
-    div.innerHTML = `<i class="${iconClass}"></i> <span>${data.id.replace(/_/g, ' ')}</span>`;
-
-    const label = new CSS2DObject(div);
-    label.position.set(0, isSide ? 0.8 : 1.2, 0);
-    mesh.add(label);
-    mesh.userData.label = label; // Store reference to label for cleanup
+    return mesh;
 }
 
-function getIconForDomain(name, type) {
-    const n = name.toLowerCase();
-    if (n.includes('python')) return 'fa-brands fa-python';
-    if (n.includes('js') || n.includes('javascript')) return 'fa-brands fa-js';
-    if (n.includes('html')) return 'fa-brands fa-html5';
-    if (n.includes('css')) return 'fa-brands fa-css3';
-    if (n.includes('react')) return 'fa-brands fa-react';
-    if (n.includes('node')) return 'fa-brands fa-node';
-    if (n.includes('database') || n.includes('sql')) return 'fa-solid fa-database';
-    if (n.includes('statistics') || n.includes('math')) return 'fa-solid fa-square-root-variable';
-    if (n.includes('regression') || n.includes('network')) return 'fa-solid fa-network-wired';
-    if (n.includes('algo')) return 'fa-solid fa-microchip';
-    if (type === 'suggestion') return 'fa-regular fa-lightbulb';
-    return 'fa-solid fa-circle-nodes'; // Default
-}
+function createNeuralEdge(source, target) {
+    const material = new THREE.LineBasicMaterial({ color: 0x00f2ff, transparent: true, opacity: 0.3 });
+    const midPoint = new THREE.Vector3().lerpVectors(source.position, target.position, 0.5);
+    midPoint.x += (Math.random() - 0.5) * 10;
+    midPoint.z += (Math.random() - 0.5) * 10;
 
-function createCurvedEdge(v1, v2, isSide = false) {
-    // Bezier
-    const mid = v1.clone().add(v2).multiplyScalar(0.5);
-    // Add randomness for 'neural' look
-    mid.x += (Math.random() - 0.5) * 5;
-    mid.z += (Math.random() - 0.5) * 5;
-
-    const curve = new THREE.QuadraticBezierCurve3(v1, mid, v2);
-    const points = curve.getPoints(20);
-    const geometry = new THREE.BufferGeometry().setFromPoints(points);
-    const material = new THREE.LineBasicMaterial({
-        color: isSide ? 0x00ffaa : 0x00f2ff,
-        transparent: true,
-        opacity: isSide ? 0.2 : 0.5
-    });
-    const line = new THREE.Line(geometry, material);
+    const curve = new THREE.QuadraticBezierCurve3(source.position, midPoint, target.position);
+    const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(curve.getPoints(30)), material);
     state.scene.add(line);
+    state.edges.push({ line, source, target, midPoint });
+
+    const particleMesh = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), new THREE.MeshBasicMaterial({ color: 0x00f2ff }));
+    state.scene.add(particleMesh);
+    state.edgeParticles.push({ mesh: particleMesh, curve, progress: Math.random() });
 }
 
-// --- Interaction ---
+function updateEdges() {
+    state.edges.forEach(edge => {
+        const curve = new THREE.QuadraticBezierCurve3(edge.source.position, edge.midPoint, edge.target.position);
+        edge.line.geometry.setFromPoints(curve.getPoints(30));
+        edge.line.geometry.attributes.position.needsUpdate = true;
+    });
+}
+
+function onPointerMove(event) {
+    state.pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
+    state.pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    if (state.isDragging && state.draggedNode) {
+        state.raycaster.setFromCamera(state.pointer, state.camera);
+        const dragPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -state.draggedNode.position.z);
+        const intersectPoint = new THREE.Vector3();
+        state.raycaster.ray.intersectPlane(dragPlane, intersectPoint);
+        state.draggedNode.position.copy(intersectPoint);
+        updateEdges();
+    }
+}
+
+function onPointerDown(event) {
+    state.raycaster.setFromCamera(state.pointer, state.camera);
+    const intersects = state.raycaster.intersectObjects(state.nodes);
+    if (intersects.length > 0) {
+        state.isDragging = true;
+        state.draggedNode = intersects[0].object;
+        state.controls.enabled = false;
+    }
+}
+
+function onPointerUp() {
+    state.isDragging = false;
+    state.draggedNode = null;
+    state.controls.enabled = true;
+}
+
+function onPointerClick() {
+    state.raycaster.setFromCamera(state.pointer, state.camera);
+    const intersects = state.raycaster.intersectObjects(state.nodes);
+    if (intersects.length > 0) {
+        const node = intersects[0].object;
+        const d = node.userData.data;
+        state.selectedNode = node;
+
+        dom.nodeTitle.textContent = d.title || d.id;
+        dom.nodeDesc.textContent = d.description || `Learning Node Level ${d.level}`;
+
+        // Show/Hide expansion button
+        if (d.type === 'module' && !state.expandedNodes.has(d.id)) {
+            dom.exploreBtn.classList.remove('hidden');
+            dom.exploreBtn.onclick = () => expandNode(node);
+        } else {
+            dom.exploreBtn.classList.add('hidden');
+        }
+
+        dom.infoPanel.classList.add('visible');
+    } else {
+        dom.infoPanel.classList.remove('visible');
+    }
+}
+
+
 function onWindowResize() {
     state.camera.aspect = window.innerWidth / window.innerHeight;
     state.camera.updateProjectionMatrix();
@@ -391,49 +397,25 @@ function onWindowResize() {
     state.composer.setSize(window.innerWidth, window.innerHeight);
 }
 
-function onPointerMove(event) {
-    state.pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
-    state.pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
-}
-
-function onPointerClick(event) {
-    if (state.hoveredNode) {
-        showNodeInfo(state.hoveredNode.userData.data);
-    }
-}
-
-function showNodeInfo(data) {
-    dom.nodeTitle.textContent = data.id.replace(/_/g, ' ');
-    dom.nodeDesc.textContent = `${data.type || 'Suggestion'} • ${data.level === 'AI' ? 'AI Generated' : 'Level ' + data.level}`;
-    dom.infoPanel.classList.add('visible');
-}
-
 function animate() {
     requestAnimationFrame(animate);
+    const time = state.clock.getElapsedTime();
     if (state.controls) state.controls.update();
+    if (state.particles) state.particles.rotation.y += 0.0005;
 
-    // Rotate Brain Cloud slowly
-    if (state.particles) {
-        state.particles.rotation.y += 0.002;
-    }
+    state.nodes.forEach(node => {
+        const pulse = Math.sin(time * node.userData.pulseSpeed + node.userData.pulsePhase) * 0.1 + 1;
+        node.scale.set(pulse, pulse, pulse);
+    });
 
-    // Raycaster
-    state.raycaster.setFromCamera(state.pointer, state.camera);
-    const intersects = state.raycaster.intersectObjects(state.nodes);
+    state.edgeParticles.forEach(p => {
+        p.progress += 0.005;
+        if (p.progress > 1) p.progress = 0;
+        p.mesh.position.copy(p.curve.getPoint(p.progress));
+    });
 
-    if (intersects.length > 0) {
-        if (state.hoveredNode !== intersects[0].object) {
-            state.hoveredNode = intersects[0].object;
-            document.body.style.cursor = 'pointer';
-        }
-    } else {
-        state.hoveredNode = null;
-        document.body.style.cursor = 'default';
-    }
-
-    state.labelRenderer.render(state.scene, state.camera); // Render text
-    state.composer.render(); // Render glow
+    state.labelRenderer.render(state.scene, state.camera);
+    state.composer.render();
 }
 
-// Init
 initThreeJS();

@@ -4,9 +4,12 @@
     --text-secondary: #a0a0ff;
     --accent-color: #00f2ff;
     --accent-glow: rgba(0, 242, 255, 0.6);
+    --foundational-color: #4ade80;
+    --advanced-color: #3b82f6;
     --glass-bg: rgba(10, 20, 40, 0.7);
     --glass-border: rgba(0, 242, 255, 0.2);
     --font-main: 'Outfit', sans-serif;
+    --neu-shadow: 10px 10px 20px #010103, -10px -10px 20px #030307;
 }
 
 * {
@@ -45,7 +48,6 @@ header {
     align-items: center;
     z-index: 10;
     pointer-events: none;
-    /* Let clicks pass through to canvas */
 }
 
 .logo {
@@ -61,16 +63,57 @@ header {
     text-shadow: 0 0 15px var(--accent-glow);
 }
 
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+}
+
+#legend {
+    display: flex;
+    gap: 20px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 8px 20px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    pointer-events: auto;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    box-shadow: 0 0 10px currentColor;
+}
+
+.dot.green {
+    background: var(--foundational-color);
+    color: var(--foundational-color);
+}
+
+.dot.blue {
+    background: var(--advanced-color);
+    color: var(--advanced-color);
+}
+
 .status {
     font-size: 0.7rem;
     color: var(--accent-color);
     border: 1px solid var(--accent-color);
-    padding: 4px 12px;
-    border-radius: 4px;
+    padding: 6px 14px;
+    border-radius: 20px;
     text-transform: uppercase;
     letter-spacing: 1px;
-    background: rgba(0, 242, 255, 0.1);
-    box-shadow: 0 0 10px rgba(0, 242, 255, 0.2);
+    background: rgba(0, 242, 255, 0.05);
+    box-shadow: var(--neu-shadow);
     pointer-events: auto;
 }
 
@@ -112,23 +155,10 @@ main {
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
     border-radius: 4px;
-    /* More tech/angular */
     padding: 2px;
-    /* Inner border glow effect space */
     box-shadow: 0 0 30px rgba(0, 242, 255, 0.1);
     position: relative;
     overflow: hidden;
-}
-
-.input-container::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, var(--accent-color), transparent);
-    animation: scan line 2s linear infinite;
 }
 
 textarea {
@@ -143,10 +173,6 @@ textarea {
     outline: none;
     padding: 20px;
     margin-bottom: 0;
-}
-
-textarea::placeholder {
-    color: rgba(255, 255, 255, 0.3);
 }
 
 .controls {
@@ -168,11 +194,6 @@ select {
     border-radius: 4px;
     font-size: 0.9rem;
     text-transform: uppercase;
-}
-
-select:hover {
-    border-color: var(--accent-color);
-    color: var(--accent-color);
 }
 
 button {
@@ -219,21 +240,21 @@ button:hover {
     height: 100%;
 }
 
-/* Info Panel - Dashboard style */
+/* Info Panel */
 #info-panel {
     position: absolute;
     top: 100px;
     right: 40px;
     width: 320px;
-    background: rgba(5, 10, 20, 0.85);
+    background: rgba(10, 20, 40, 0.85);
     border: 1px solid var(--glass-border);
-    border-left: 4px solid var(--accent-color);
-    padding: 25px;
-    backdrop-filter: blur(15px);
+    border-radius: 20px;
+    padding: 30px;
+    backdrop-filter: blur(20px);
     transform: translateX(50px);
     opacity: 0;
-    transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: var(--neu-shadow);
 }
 
 #info-panel.visible {
@@ -288,40 +309,12 @@ button:hover {
     backdrop-filter: blur(5px);
 }
 
-#ai-insights h3 {
-    font-size: 0.8rem;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    margin-bottom: 15px;
-    color: var(--accent-color);
-    display: flex;
-    align-items: center;
-}
-
-#ai-insights h3::before {
-    content: '';
-    display: inline-block;
-    width: 10px;
-    height: 10px;
-    background: var(--accent-color);
-    margin-right: 10px;
-    box-shadow: 0 0 10px var(--accent-color);
-    border-radius: 50%;
-}
-
 #insights-list li {
     font-size: 0.9rem;
     color: #ddd;
     margin-bottom: 8px;
     padding-left: 15px;
     border-left: 2px solid rgba(255, 255, 255, 0.1);
-    transition: all 0.3s;
-}
-
-#insights-list li:hover {
-    border-left-color: var(--accent-color);
-    color: #fff;
-    padding-left: 20px;
 }
 
 .hidden {
@@ -352,4 +345,26 @@ button:hover {
     100% {
         transform: rotate(360deg);
     }
+}
+
+/* Animations */
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 10px var(--accent-glow);
+    }
+
+    50% {
+        transform: scale(1.1);
+        box-shadow: 0 0 25px var(--accent-glow);
+    }
+
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 10px var(--accent-glow);
+    }
+}
+
+.pulse {
+    animation: pulse 2s infinite;
 }
