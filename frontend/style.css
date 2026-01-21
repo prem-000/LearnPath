@@ -254,7 +254,7 @@ button:hover {
     transform: translateX(50px);
     opacity: 0;
     transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    box-shadow: var(--neu-shadow);
+    z-index: 60;
 }
 
 #info-panel.visible {
@@ -442,7 +442,7 @@ button:hover {
     backdrop-filter: blur(15px);
     box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
     transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
-    z-index: 101;
+    z-index: 100;
 }
 
 .chat-header {
@@ -463,11 +463,16 @@ button:hover {
     margin-left: auto;
     cursor: pointer;
     opacity: 0.6;
-    transition: opacity 0.2s;
+    transition: all 0.2s;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 #close-chat:hover {
     opacity: 1;
+    transform: scale(1.2) rotate(90deg);
 }
 
 #chat-messages {

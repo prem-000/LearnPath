@@ -19,6 +19,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# Note: If CORS still fails with credentials, consider specific origins
+# allow_origins=["http://localhost:5500", "http://127.0.0.1:5500", "http://localhost:8000"]
 
 path_builder = PathBuilder()
 

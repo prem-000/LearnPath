@@ -134,12 +134,14 @@ function updateChatbot(cb) {
 }
 
 // Chat UI Toggle
-dom.chatToggle.addEventListener('click', () => {
+dom.chatToggle.addEventListener('click', (e) => {
+    e.stopPropagation();
     state.isChatOpen = !state.isChatOpen;
     dom.chatWindow.classList.toggle('hidden', !state.isChatOpen);
 });
 
-dom.closeChatBtn.addEventListener('click', () => {
+dom.closeChatBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
     state.isChatOpen = false;
     dom.chatWindow.classList.add('hidden');
 });
@@ -313,6 +315,13 @@ function createNeuralEdge(source, target) {
 }
 
 function onPointerClick(event) {
+    // Ignore clicks on UI elements to prevent hiding the info panel
+    if (event.target.closest('#info-panel') ||
+        event.target.closest('#chat-window') ||
+        event.target.closest('#chat-toggle')) {
+        return;
+    }
+
     state.pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
     state.pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
     state.raycaster.setFromCamera(state.pointer, state.camera);
