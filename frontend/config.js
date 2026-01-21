@@ -4,5 +4,5 @@ export const CONFIG = {
     // If you know your backend URL, put it here.
     API_URL: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
         ? 'http://127.0.0.1:8000'
-        : 'https://YOUR-BACKEND-APP-NAME.onrender.com' // TODO: Replace with your actual Render Backend URL after deployment
+        : 'https://learnpath-h0m1.onrender.com' // TODO: Replace with your actual Render Backend URL after deployment
 };
