@@ -20,8 +20,8 @@ def test_model(model_id):
 
 if __name__ == "__main__":
     models_to_try = [
-        "gemini-1.5-flash",
-        "gemini-1.5-flash-latest",
+        "gemini-flash-latest",
+        "gemini-2.0-flash",
         "gemini-2.0-flash-exp"
     ]
     for mid in models_to_try:

@@ -72,17 +72,51 @@
 
                 <div id="info-panel">
                     <h2 id="node-title">Topic Name</h2>
-                    <p id="node-desc">Core Topic • Level 1</p>
+                    <p id="node-desc">Core Topic • Overview</p>
                     <div class="actions">
-                        <button id="explore-btn">Expand Subtopics</button>
+                        <!-- Expansion functionality removed in favor of full hierarchy -->
+                    </div>
+
+                    <div id="task-section" class="hidden">
+                        <h4>Cognitive Task</h4>
+                        <p id="task-content"></p>
+                        <div class="quiz-area">
+                            <h5>Neural Quiz</h5>
+                            <p id="quiz-question"></p>
+                            <div id="quiz-options"></div>
+                        </div>
                     </div>
                 </div>
 
-                <div id="ai-insights">
+                <div id="ai-insights" class="hidden">
                     <h3>Neural Expansion</h3>
                     <ul id="insights-list">
                         <!-- suggestions -->
                     </ul>
+                </div>
+
+                <!-- LearnyBot Chatbot -->
+                <div id="chat-toggle">
+                    <i class="fas fa-robot"></i>
+                    <span>LearnyBot</span>
+                </div>
+
+                <div id="chat-window" class="hidden">
+                    <div class="chat-header">
+                        <i class="fas fa-brain"></i>
+                        <span>LearnyBot</span>
+                        <i class="fas fa-times" id="close-chat"></i>
+                    </div>
+                    <div id="chat-messages">
+                        <!-- messages -->
+                    </div>
+                    <div class="chat-options" id="chat-suggested-options">
+                        <!-- Dynamic buttons like "Give example" -->
+                    </div>
+                    <div class="chat-input-area">
+                        <input type="text" id="chat-input" placeholder="Ask about this node...">
+                        <button id="send-chat"><i class="fas fa-paper-plane"></i></button>
+                    </div>
                 </div>
             </section>
         </main>

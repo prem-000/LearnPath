@@ -26,14 +26,43 @@ class PathRequest(BaseModel):
     text: str
     level: str = "beginner"
 
-@app.get("/health")
-async def health_check():
-    return {"status": "ok"}
+class ProcessRequest(BaseModel):
+    topic: str
+    level: str = "beginner"
+    selected_node: str = "root"
 
 @app.post("/generate_path")
 async def generate_path(request: PathRequest):
     try:
-        result = path_builder.generate_path(request.text, request.level)
+        # Use simple 2-level hierarchical generation for initial
+        result = path_builder.gemini.process_request(request.text, request.level, "root")
         return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/process")
+async def process_engine(request: ProcessRequest):
+    try:
+        result = path_builder.gemini.process_request(request.topic, request.level, request.selected_node)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+class ChatRequest(BaseModel):
+    message: str
+    topic: str
+    level: str = "beginner"
+    node_context: str = "root"
+
+@app.post("/chat")
+async def chat_tutor(request: ChatRequest):
+    try:
+        response = path_builder.gemini.get_tutor_response(
+            request.message, 
+            request.topic, 
+            request.level, 
+            request.node_context
+        )
+        return {"response": response}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
